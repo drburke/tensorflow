@@ -39,7 +39,8 @@ def model_inputs(image_width, image_height, image_channels, embedded_image_dim):
 def encoder(input_images_tf, embedded_image_dim_tf, reuse=False):
 	
 	noise_std = 0.05
-
+	dropout_value = 0.8
+	
 	with tf.variable_scope('encoder', reuse=reuse):
 		
 		with tf.variable_scope('conv_1'):
@@ -55,6 +56,7 @@ def encoder(input_images_tf, embedded_image_dim_tf, reuse=False):
 			bn2 = tf.layers.batch_normalization(conv2, training=True)
 			bn2 += tf.truncated_normal(shape=tf.shape(bn2),mean=0.0,stddev=noise_std, dtype=tf.float32)
 			relu2 = leaky_relu(bn2)
+			relu2 = tf.nn.dropout(relu2,dropout_value)
 			# 7x7x128
 		
 		with tf.variable_scope('conv_3'):
@@ -63,6 +65,7 @@ def encoder(input_images_tf, embedded_image_dim_tf, reuse=False):
 			bn3 = tf.layers.batch_normalization(conv3, training=True)
 			bn3 += tf.truncated_normal(shape=tf.shape(bn3),mean=0.0,stddev=noise_std, dtype=tf.float32)
 			relu3 = leaky_relu(bn3)
+			relu3 = tf.nn.dropout(relu3,dropout_value)
 			#7x7x256
 		
 		with tf.variable_scope('out'):
@@ -70,7 +73,7 @@ def encoder(input_images_tf, embedded_image_dim_tf, reuse=False):
 			flat = tf.reshape(relu3, (-1, 7*7*256))
 			
 			# Dropout
-			dropout = tf.nn.dropout(flat,0.8)
+			dropout = tf.nn.dropout(flat,dropout_value)
 			
 			# Logits
 			logits = tf.layers.dense(dropout, embedded_image_dim_tf,\
@@ -85,7 +88,7 @@ def encoder(input_images_tf, embedded_image_dim_tf, reuse=False):
 # Generator
 def generator(embedding_tf, output_image_channel_dim, is_train=True):
 
-	
+	dropout_value = 0.8
 	with tf.variable_scope('generator', reuse=not is_train):
 
 		with tf.variable_scope('dense'):
@@ -98,7 +101,7 @@ def generator(embedding_tf, output_image_channel_dim, is_train=True):
 			x1 = tf.reshape(x1, (-1, 7, 7, 512))
 			x1 = tf.layers.batch_normalization(x1, training=is_train)
 			x1 = leaky_relu(x1)
-			x1 = tf.nn.dropout(x1,0.5)
+			x1 = tf.nn.dropout(x1,dropout_value)
 			# 7x7x512 now
 		
 		with tf.variable_scope('deconv_2'):
@@ -106,7 +109,7 @@ def generator(embedding_tf, output_image_channel_dim, is_train=True):
 									kernel_initializer=tf.contrib.layers.xavier_initializer())
 			x2 = tf.layers.batch_normalization(x2, training=is_train)
 			x2 = leaky_relu(x2)
-			x2 = tf.nn.dropout(x2,0.5)
+			x2 = tf.nn.dropout(x2,dropout_value)
 			# 14x14x256 now
 		
 		with tf.variable_scope('deconv_3'):
@@ -114,7 +117,7 @@ def generator(embedding_tf, output_image_channel_dim, is_train=True):
 									kernel_initializer=tf.contrib.layers.xavier_initializer())
 			x3 = tf.layers.batch_normalization(x3, training=is_train)
 			x3 = leaky_relu(x3)
-			x3 = tf.nn.dropout(x3,0.5)
+			x3 = tf.nn.dropout(x3,dropout_value)
 			# 28x28x256 now
 		
 		with tf.variable_scope('out'):
