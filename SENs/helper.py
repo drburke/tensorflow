@@ -39,21 +39,24 @@ def get_noisy_target_images(images,img_shape,noise_sigma,num_img_channels):
     return batch_images, target_images
 
 
-def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf, data_image_mode):
+def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf, generator_output_tf, generator_input_tf, embedded_image_dim, data_image_mode):
 
     batch_images, target_images = get_noisy_target_images(input_images,img_shape,0.4,len(data_image_mode))
 
     clear_output()
     cmap = None if data_image_mode == 'RGB' else 'gray'
 
-    samples = sess.run(
-        outputs_tf,
-        feed_dict={inputs_tf: batch_images})
+    noise_inputs = np.clip(np.random.normal(size=(25,embedded_image_dim)),0.,1.)
 
-    print('max_in = ', np.max(batch_images), '  max_out = ',np.max(samples))
-    print('min_in = ', np.min(batch_images), '  min_out = ',np.min(samples))
-    images_grid_out = images_square_grid(samples, data_image_mode)
+    autoencode_samples, generated_samples = sess.run([outputs_tf,generator_output_tf],
+        feed_dict={inputs_tf: batch_images, generator_input_tf: noise_inputs})
+
+    print('max_in = ', np.max(batch_images), '  max_out = ',np.max(autoencode_samples))
+    print('min_in = ', np.min(batch_images), '  min_out = ',np.min(autoencode_samples))
+    images_grid_out = images_square_grid(autoencode_samples, data_image_mode)
     images_grid_in = images_square_grid(batch_images,data_image_mode)
-    images_grid_all = np.concatenate((images_grid_in,images_grid_out),axis=1)
+    images_grid_gan = images_square_grid(generated_samples, data_image_mode)
+
+    images_grid_all = np.concatenate((images_grid_in,images_grid_out,images_grid_gan),axis=1)
     plt.imshow(images_grid_all, cmap=cmap)
     plt.show()
