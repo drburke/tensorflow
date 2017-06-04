@@ -175,7 +175,7 @@ def generator(generator_input_tf, embedded_image_dim, reuse=False):
 			dense1 = tf.nn.dropout(dense1,dropout_value)
 
 		with tf.variable_scope('dense_2'):
-			dense2 = tf.layers.dense(dense1,generator_input_tf,\
+			dense2 = tf.layers.dense(dense1,embedded_image_dim,\
 				kernel_initializer=tf.contrib.layers.xavier_initializer(),reuse=reuse)
 			dense2 = leaky_relu(dense2)
 			dense2 = tf.nn.dropout(dense2,dropout_value)
