@@ -92,7 +92,7 @@ def encoder(input_images_tf, embedded_image_dim_tf, reuse=False):
 
 
 # Generator
-def generator(embedding_tf, output_image_channel_dim, is_train=True,name='generator_default'):
+def decoder(embedding_tf, output_image_channel_dim, is_train=True,name='decoder'):
 
 	dropout_value = 0.8
 	with tf.variable_scope(name, reuse=not is_train):
@@ -162,13 +162,41 @@ def discriminator(embedding_tf, reuse=False):
 
 	return out, logits
 
+def generator(generator_input_tf, embedded_image_dim, reuse=False):
 
-def model_loss(input_images_tf, output_image_channel_dim, target_output_images_tf, embedded_image_dim, embedded_image_input_tf):
+	dropout_value = 0.5
+
+	with tf.variable_scope('generator'):
+
+		with tf.variable_scope('dense_1'):
+			dense1 = tf.layers.dense(generator_input_tf,embedded_image_dim,\
+				kernel_initializer=tf.contrib.layers.xavier_initializer(),reuse=reuse)
+			dense1 = leaky_relu(dense1)
+			dense1 = tf.nn.dropout(dense1,dropout_value)
+
+		with tf.variable_scope('dense_2'):
+			dense2 = tf.layers.dense(dense1,generator_input_tf,\
+				kernel_initializer=tf.contrib.layers.xavier_initializer(),reuse=reuse)
+			dense2 = leaky_relu(dense2)
+			dense2 = tf.nn.dropout(dense2,dropout_value)
+
+		with tf.variable_scope('out'):
+			logits = tf.layers.dense(dense2,embedded_image_dim,\
+				kernel_initializer=tf.contrib.layers.xavier_initializer(),reuse=reuse)
+
+			out = tf.sigmoid(logits)
+
+	return out, logits
+
+
+
+def model_loss(input_images_tf, output_image_channel_dim, target_output_images_tf, embedded_image_dim, generator_image_input_tf):
 
 	smooth = 0.1
 	
 	# create image generator (from randon embedding input)
-	image_generated_output_tf, image_generated_logits_tf = generator(embedded_image_input_tf, output_image_channel_dim, is_train=True, name='generator')
+	embedded_image_input_tf, embedded_logits_input_tf = generator(generator_image_input_tf, embedded_image_dim, reuse=False)
+	image_generated_output_tf, image_generated_logits_tf = decoder(embedded_image_input_tf, output_image_channel_dim, is_train=True)
 	# Send to discriminator for fake and real
 	image_generated_encoded_real_tf, logits_generated_encoded_real_tf = encoder(target_output_images_tf, embedded_image_dim, reuse=False)
 
@@ -193,7 +221,7 @@ def model_loss(input_images_tf, output_image_channel_dim, target_output_images_t
 	# takes image input and encodes / embeds
 	image_encoder_output_tf, image_encoder_logits_tf = encoder(input_images_tf, embedded_image_dim, reuse=True)
 	# takes image embedding and decodes / generates / autoencodes
-	image_decoder_output_tf, image_decoder_logits_tf = generator(image_encoder_output_tf, output_image_channel_dim, is_train=False, name='generator')
+	image_decoder_output_tf, image_decoder_logits_tf = decoder(image_encoder_output_tf, output_image_channel_dim, is_train=False)
 	
 	# autoencoder cost
 	autoencoder_cost_tf = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=target_output_images_tf, logits=image_decoder_logits_tf))
@@ -207,8 +235,8 @@ def model_opt(autoencoder_cost_tf, discriminator_cost_tf, generator_cost_tf, lea
 	# Get weights and bias to update
 	t_vars = tf.trainable_variables()
 
-	autoencoder_variables_tf = [var for var in t_vars if (var.name.startswith('generator') or var.name.startswith('encoder'))]
-	discriminator_variables_tf = [var for var in t_vars if (var.name.startswith('discriminator') or var.name.startswith('encoder'))]
+	autoencoder_variables_tf = [var for var in t_vars if (var.name.startswith('decoder') or var.name.startswith('encoder'))]
+	discriminator_variables_tf = [var for var in t_vars if (var.name.startswith('discriminator'))]
 	generator_variables_tf = [var for var in t_vars if (var.name.startswith('generator'))]
 
 	# Optimize
