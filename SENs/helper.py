@@ -29,19 +29,29 @@ def images_square_grid(images, mode):
     return new_im
 
 
-def get_noisy_target_images(images,img_shape,noise_sigma,num_img_channels):
+def get_noisy_target_images(images,img_shape,noise_sigma,num_img_channels,augment=False):
 
     target_images = images[0].reshape((-1,img_shape,img_shape,num_img_channels))
+    
+    if augment:
+        if np.random.randint(2) == 1:
+            target_images = np.flip(target_images,1)
+        if np.random.randint(2) == 1:
+            target_images = np.flip(target_images,2)
+        target_images = np.rot90(target_images,k=np.random.randint(4), axes=(1,2))
+
     noise = np.clip(np.random.randn(*target_images.shape), -2., 2.)
     batch_images = target_images + noise_sigma * noise
     batch_images = np.clip(batch_images, 0., 1.)
 
+
+
     return batch_images, target_images
 
 
-def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf, generator_output_tf, generator_input_tf, embedded_image_dim, data_image_mode):
+def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf, generator_output_tf, generator_input_tf, embedded_image_dim, data_image_mode,label='default'):
 
-    batch_images, target_images = get_noisy_target_images(input_images,img_shape,0.4,len(data_image_mode))
+    batch_images, target_images = get_noisy_target_images(input_images,img_shape,0.4,len(data_image_mode), augment=True)
 
     clear_output()
     cmap = None if data_image_mode == 'RGB' else 'gray'
@@ -58,5 +68,9 @@ def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf
     images_grid_gan = images_square_grid(generated_samples, data_image_mode)
 
     images_grid_all = np.concatenate((images_grid_in,images_grid_out,images_grid_gan),axis=1)
+
+    fig = plt.figure()
     plt.imshow(images_grid_all, cmap=cmap)
     plt.show()
+    plt.imsave(label+'.png', images_grid_all, cmap=cmap)
+    print(label)
