@@ -202,9 +202,9 @@ def model_loss(input_images_tf, output_image_channel_dim, target_output_images_t
 
 	tf.summary.histogram("encoded_real",image_generated_encoded_real_tf)
 
-	image_generated_encoded_fake_tf, logits_generated_encoded_fake_tf = encoder(image_generated_output_tf, embedded_image_dim, reuse=True)
+	#image_generated_encoded_fake_tf, logits_generated_encoded_fake_tf = encoder(image_generated_output_tf, embedded_image_dim, reuse=True)
 
-	discriminator_output_fake_tf, discriminator_logits_fake_tf = discriminator(image_generated_encoded_fake_tf, reuse=False)
+	discriminator_output_fake_tf, discriminator_logits_fake_tf = discriminator(embedded_image_input_tf, reuse=False)
 	discriminator_output_real_tf, discriminator_logits_real_tf = discriminator(image_generated_encoded_real_tf, reuse=True)
 
 	# discriminator loss
@@ -237,7 +237,7 @@ def model_opt(autoencoder_cost_tf, discriminator_cost_tf, generator_cost_tf, lea
 
 	autoencoder_variables_tf = [var for var in t_vars if (var.name.startswith('decoder') or var.name.startswith('encoder'))]
 	discriminator_variables_tf = [var for var in t_vars if (var.name.startswith('discriminator') or var.name.startswith('encoder'))]
-	generator_variables_tf = [var for var in t_vars if (var.name.startswith('generator') or var.name.startswith('decoder'))]
+	generator_variables_tf = [var for var in t_vars if (var.name.startswith('generator'))]
 
 	# Optimize
 	with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):

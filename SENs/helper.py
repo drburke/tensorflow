@@ -51,7 +51,7 @@ def get_noisy_target_images(images,img_shape,noise_sigma,num_img_channels,augmen
 
 def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf, generator_output_tf, generator_input_tf, embedded_image_dim, data_image_mode,label='default'):
 
-    batch_images, target_images = get_noisy_target_images(input_images,img_shape,0.4,len(data_image_mode), augment=True)
+    batch_images, target_images = get_noisy_target_images(input_images,img_shape,0.4,len(data_image_mode), augment=False)
 
     clear_output()
     cmap = None if data_image_mode == 'RGB' else 'gray'
