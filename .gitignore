@@ -3,4 +3,7 @@
 *.mp4
 *log*
 *.gz
-*checkpoint.
+*checkpoint.*
+*png*
+*.pyc
+*\.ipynb*
