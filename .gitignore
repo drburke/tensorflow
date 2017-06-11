@@ -4,6 +4,6 @@
 *log*
 *.gz
 *checkpoint.*
-*png*
 *.pyc
 *\.ipynb*
+*1.png
