@@ -11,7 +11,7 @@ Initial code base was from an assignment in the Udacity deep learning nanodegree
 Very cool blog for generating images:
 [Generating Large Images from Latent Vectors.](http://blog.otoro.net/2016/04/01/generating-large-images-from-latent-vectors/)
 
-Code in 'SENs_mnist.ipynb'
+Code in [SENs_MNIST.ipynb](https://github.com/drburke/tensorflow/blob/master/SENs/SENs_MNIST.ipynb)
 
 #### Initial Architecture, Network Pieces
 
