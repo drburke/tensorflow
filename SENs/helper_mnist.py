@@ -118,7 +118,7 @@ def images_square_grid(images, mode):
 def get_noisy_target_images(images,img_shape,noise_sigma,num_img_channels,augment=False):
 
     #target_images = images.reshape((-1,img_shape,img_shape,num_img_channels))
-    target_images = images[0].reshape((-1,img_shape,img_shape,num_img_channels))
+    target_images = images.reshape((-1,img_shape,img_shape,num_img_channels))
     if augment:
         if np.random.randint(2) == 1:
             target_images = np.flip(target_images,1)
@@ -141,7 +141,7 @@ def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf
 
         batch_images, target_images = get_noisy_target_images(input_images,img_shape,0.4,len(data_image_mode), augment=False)
 
-        clear_output()
+        #clear_output()
         cmap = None if data_image_mode == 'RGB' else 'gray'
 
         noise_inputs = np.clip(np.random.normal(size=(25,embedded_image_dim)),0.,1.)
@@ -157,6 +157,7 @@ def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf
         images_grid_in = images_square_grid(batch_images,data_image_mode)
         images_grid_gan = images_square_grid(generated_samples, data_image_mode)
 
+        print(np.shape(images_grid_out),np.shape(images_grid_in),np.shape(images_grid_gan))
         images_grid_all = np.concatenate((images_grid_in,images_grid_out,images_grid_gan),axis=1)
 
         fig = plt.figure()

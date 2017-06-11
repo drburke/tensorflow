@@ -42,35 +42,29 @@ def model_inputs(image_width, image_height, image_channels, embedded_image_dim):
 
 
 # encoding network
-def encoder(input_images_tf, embedded_image_dim_tf, reuse=False):
+def encoder(input_images_tf, embedded_image_dim_tf, reuse=False, dropout_value=0.8):
 	
-	noise_std = 0.05
-	dropout_value = 0.8
-
 	with tf.variable_scope('encoder', reuse=reuse):
 		
 		with tf.variable_scope('conv_1'):
 			# Input layer is 28x28x1
 			conv1 = tf.layers.conv2d(input_images_tf, 64, 5, strides=1, padding='same', \
 				kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d())
-			conv1 += tf.truncated_normal(shape=tf.shape(conv1),mean=0.0,stddev=noise_std, dtype=tf.float32)
 			relu1 = leaky_relu(conv1)
-			# 14x14x64
+			# 28x28x64
 		
 		with tf.variable_scope('conv_2'):
 			conv2 = tf.layers.conv2d(relu1, 128, 5, strides=2, padding='same',\
 							kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d())
 			bn2 = tf.layers.batch_normalization(conv2, training=True)
-			bn2 += tf.truncated_normal(shape=tf.shape(bn2),mean=0.0,stddev=noise_std, dtype=tf.float32)
 			relu2 = leaky_relu(bn2)
 			relu2 = tf.nn.dropout(relu2,dropout_value)
-			# 7x7x128
+			# 14x14x128
 		
 		with tf.variable_scope('conv_3'):
 			conv3 = tf.layers.conv2d(relu2, 256, 5, strides=2, padding='same',\
 									kernel_initializer=tf.contrib.layers.xavier_initializer_conv2d())
 			bn3 = tf.layers.batch_normalization(conv3, training=True)
-			bn3 += tf.truncated_normal(shape=tf.shape(bn3),mean=0.0,stddev=noise_std, dtype=tf.float32)
 			relu3 = leaky_relu(bn3)
 			relu3 = tf.nn.dropout(relu3,dropout_value)
 			#7x7x256
@@ -93,17 +87,14 @@ def encoder(input_images_tf, embedded_image_dim_tf, reuse=False):
 
 
 # Generator
-def decoder(embedding_tf, output_image_channel_dim, is_train=True,name='decoder'):
+def decoder(embedding_tf, output_image_channel_dim, is_train=True,name='decoder',dropout_value=0.8):
 
-	dropout_value = 0.8
 	with tf.variable_scope(name, reuse=not is_train):
 
 		with tf.variable_scope('dense'):
 			# First fully connected layer
 			x1 = tf.layers.dense(embedding_tf, 7*7*512,\
 									kernel_initializer=tf.contrib.layers.xavier_initializer())
-			
-		with tf.variable_scope('deconv_1'):
 			# Reshape it to start the convolutional stack
 			x1 = tf.reshape(x1, (-1, 7, 7, 512))
 			x1 = tf.layers.batch_normalization(x1, training=is_train)
@@ -111,7 +102,7 @@ def decoder(embedding_tf, output_image_channel_dim, is_train=True,name='decoder'
 			x1 = tf.nn.dropout(x1,dropout_value)
 			# 7x7x512 now
 		
-		with tf.variable_scope('deconv_2'):
+		with tf.variable_scope('deconv_1'):
 			x2 = tf.layers.conv2d_transpose(x1, 256, 5, strides=2, padding='same',\
 									kernel_initializer=tf.contrib.layers.xavier_initializer())
 			x2 = tf.layers.batch_normalization(x2, training=is_train)
@@ -119,7 +110,7 @@ def decoder(embedding_tf, output_image_channel_dim, is_train=True,name='decoder'
 			x2 = tf.nn.dropout(x2,dropout_value)
 			# 14x14x256 now
 		
-		with tf.variable_scope('deconv_3'):
+		with tf.variable_scope('deconv_2'):
 			x3 = tf.layers.conv2d_transpose(x2, 128, 5, strides=2, padding='same',\
 									kernel_initializer=tf.contrib.layers.xavier_initializer())
 			x3 = tf.layers.batch_normalization(x3, training=is_train)
@@ -127,7 +118,7 @@ def decoder(embedding_tf, output_image_channel_dim, is_train=True,name='decoder'
 			x3 = tf.nn.dropout(x3,dropout_value)
 			# 28x28x256 now
 		
-		with tf.variable_scope('out'):
+		with tf.variable_scope('deconv_3'):
 			# Output layer
 			logits = tf.layers.conv2d_transpose(x3, output_image_channel_dim, 5, strides=1, padding='same',\
 									kernel_initializer=tf.contrib.layers.xavier_initializer())
@@ -137,9 +128,8 @@ def decoder(embedding_tf, output_image_channel_dim, is_train=True,name='decoder'
 	
 	return out, logits
 
-def discriminator(embedding_tf, reuse=False):
 
-	dropout_value = 0.8
+def discriminator(embedding_tf, reuse=False, dropout_value=0.8):
 
 	with tf.variable_scope('discriminator'):
 
@@ -163,9 +153,8 @@ def discriminator(embedding_tf, reuse=False):
 
 	return out, logits
 
-def generator(generator_input_tf, embedded_image_dim, reuse=False):
 
-	dropout_value = 0.5
+def generator(generator_input_tf, embedded_image_dim, reuse=False, dropout_value=0.5):
 
 	with tf.variable_scope('generator'):
 
@@ -191,20 +180,27 @@ def generator(generator_input_tf, embedded_image_dim, reuse=False):
 
 
 
-def model_loss(input_images_tf, output_image_channel_dim, target_output_images_tf, embedded_image_dim, generator_image_input_tf):
+def model_loss(input_images_tf, output_image_channel_dim, target_output_images_tf, embedded_image_dim, generator_image_input_tf, smooth=0.1):
 
-	smooth = 0.1
-	
+
 	# create image generator (from randon embedding input)
 	embedded_image_input_tf, embedded_logits_input_tf = generator(generator_image_input_tf, embedded_image_dim, reuse=False)
 	image_generated_output_tf, image_generated_logits_tf = decoder(embedded_image_input_tf, output_image_channel_dim, is_train=True)
+	image_generated_output_tf = tf.identity(image_generated_output_tf, name='generated_image_output')
 	# Send to discriminator for fake and real
 	image_generated_encoded_real_tf, logits_generated_encoded_real_tf = encoder(target_output_images_tf, embedded_image_dim, reuse=False)
 
+	# Add distribution of encoded real images
 	tf.summary.histogram("encoded_real",image_generated_encoded_real_tf)
 
+	# Encode images from generator->decoder
 	image_generated_encoded_fake_tf, logits_generated_encoded_fake_tf = encoder(image_generated_output_tf, embedded_image_dim, reuse=True)
 
+
+	# Add distribution of encoded fake images
+	tf.summary.histogram("encoded_fake",image_generated_encoded_fake_tf)
+
+	# Create discriminator
 	discriminator_output_fake_tf, discriminator_logits_fake_tf = discriminator(image_generated_encoded_fake_tf, reuse=False)
 	discriminator_output_real_tf, discriminator_logits_real_tf = discriminator(image_generated_encoded_real_tf, reuse=True)
 
@@ -221,10 +217,12 @@ def model_loss(input_images_tf, output_image_channel_dim, target_output_images_t
 	# Create autoencoder
 	# takes image input and encodes / embeds
 	image_encoder_output_tf, image_encoder_logits_tf = encoder(input_images_tf, embedded_image_dim, reuse=True)
+	image_encoder_output_tf = tf.identity(image_encoder_output_tf, name='image_encoder_output')
+
 	# takes image embedding and decodes / generates / autoencodes
 	image_decoder_output_tf, image_decoder_logits_tf = decoder(image_encoder_output_tf, output_image_channel_dim, is_train=False)
-	
-	# autoencoder cost
+	image_decoder_output_tf = tf.identity(image_decoder_output_tf, name='image_decoder_output')
+	# autoencoder cost using MSE
 	#autoencoder_cost_tf = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=target_output_images_tf, logits=image_decoder_logits_tf))
 	autoencoder_cost_tf = tf.reduce_mean(tf.squared_difference(target_output_images_tf, image_decoder_output_tf))
 
