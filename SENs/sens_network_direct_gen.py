@@ -236,7 +236,7 @@ def model_opt(autoencoder_cost_tf, discriminator_cost_tf, generator_cost_tf, lea
 	t_vars = tf.trainable_variables()
 
 	autoencoder_variables_tf = [var for var in t_vars if (var.name.startswith('decoder') or var.name.startswith('encoder'))]
-	discriminator_variables_tf = [var for var in t_vars if (var.name.startswith('discriminator') or var.name.startswith('encoder'))]
+	discriminator_variables_tf = [var for var in t_vars if (var.name.startswith('discriminator'))]
 	generator_variables_tf = [var for var in t_vars if (var.name.startswith('generator'))]
 
 	# Optimize

@@ -117,8 +117,8 @@ def images_square_grid(images, mode):
 
 def get_noisy_target_images(images,img_shape,noise_sigma,num_img_channels,augment=False):
 
-    target_images = images.reshape((-1,img_shape,img_shape,num_img_channels))
-    #target_images = images[0].reshape((-1,img_shape,img_shape,num_img_channels))
+    #target_images = images.reshape((-1,img_shape,img_shape,num_img_channels))
+    target_images = images[0].reshape((-1,img_shape,img_shape,num_img_channels))
     if augment:
         if np.random.randint(2) == 1:
             target_images = np.flip(target_images,1)
@@ -139,7 +139,7 @@ def show_autoencoder_output(sess, img_shape, input_images, inputs_tf, outputs_tf
 
     if len(data_image_mode) == 1:
 
-        batch_images, target_images = get_noisy_target_images(input_images,img_shape,0.0,len(data_image_mode), augment=False)
+        batch_images, target_images = get_noisy_target_images(input_images,img_shape,0.4,len(data_image_mode), augment=False)
 
         clear_output()
         cmap = None if data_image_mode == 'RGB' else 'gray'
