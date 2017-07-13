@@ -49,7 +49,7 @@ The autoencoder combines the encoder and decoder network.  Generator combines th
 
 #### Implementation
 
-For the most part I am using leaky relus, these seem to be a good way to get gradients moving efficiently.  The final layers of each network depend on what their goal is but are mostly sigmoids for the moment.  Dropout is heavily used in most layers.  
+For the most part I am using leaky relus, these seem to be a good way to get gradients moving efficiently.  The final layers of each network depend on what their goal is but are mostly sigmoids for the moment.  Dropout is heavily used in most layers.  Batch normalization is also used between most layers of the encoder and decoder- this significantly helps the model.
 
 I'm adding noise to the autoencoder which I am hoping will improve the robustness of the networks.  This will be explored a bit.  Also data augmentation for the autoencoder will randomly rotate and flip the MNIST digits.  The data will not be augmented for the discriminator which will get noise free and unrotated/flipped data.
 
@@ -81,7 +81,11 @@ There are some very cool blogs showing an exploration of this embedding space.  
 
 
 #### Add classifiers
-It would be interesting to add a classifier into the SENs.  Using the encodings from the other network may help it identify what the object/number is.  If the generator was provided with a one hot input as well as noise this input could also be compared with the classifier result of the generated image and added to the loss.  This would create a directed generator.
+It would be interesting to add a classifier into the SENs.  Using the encodings from the other network may help it identify what the object/number is.  If the generator was provided with a one hot input as well as the random vector, this input could also be compared with the classifier result of the generated image and added to the loss.  This would create a directed generator.
+
+Having trained the autoencoder and generator/discriminator I've tried using the resulting encoder followed by a few dense layers to mnist classifier.  Giving it only 100 labelled examples it seems to get up to ~75% accuracy on 1000 examples for which it hasn't seen the label - but has been seen before by the autoencoder.  With 500 I have gotten to near ~90% accuracy testing on 5000 new examples.  Not tooo terrible.
+
+Another thing that I've tried is feeding the network 1000 examples and giving it the correct answers as the argmax of it's final output - essentially telling the model that it is correct.  Using this on a classifier that is decently trained already can give a bit of a boost to the accuracy.  With 100 labelled examples I have achieved up to 86%.
 
 #### Further
 

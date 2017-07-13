@@ -211,7 +211,7 @@ def model_loss(input_images_tf, output_image_channel_dim, target_output_images_t
                                                 labels=tf.ones_like(discriminator_output_real_tf) * (1-smooth)))
 	discriminator_cost_tf = discriminator_loss_fake_tf + discriminator_loss_real_tf
 
-	generator_cost_tf = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=discriminator_logits_fake_tf, labels=tf.ones_like(discriminator_output_fake_tf) * (1-smooth)))
+	generator_cost_tf = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=discriminator_logits_fake_tf, labels=tf.ones_like(discriminator_output_fake_tf)))# * (1-smooth)))
 
 
 	# Create autoencoder
@@ -223,10 +223,9 @@ def model_loss(input_images_tf, output_image_channel_dim, target_output_images_t
 	image_decoder_output_tf, image_decoder_logits_tf = decoder(image_encoder_output_tf, output_image_channel_dim, is_train=False)
 	image_decoder_output_tf = tf.identity(image_decoder_output_tf, name='image_decoder_output')
 	# autoencoder cost using MSE
-	#autoencoder_cost_tf = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=target_output_images_tf, logits=image_decoder_logits_tf))
-	autoencoder_cost_tf = tf.reduce_mean(tf.squared_difference(target_output_images_tf, image_decoder_output_tf))
-
-
+	autoencoder_cost_tf = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=target_output_images_tf, logits=image_decoder_logits_tf))
+	#autoencoder_cost_tf = tf.reduce_mean(tf.squared_difference(target_output_images_tf, image_decoder_output_tf))
+	
 	
 	return autoencoder_cost_tf, image_decoder_output_tf, discriminator_cost_tf, discriminator_output_real_tf, image_generated_output_tf, discriminator_loss_fake_tf, discriminator_loss_real_tf, generator_cost_tf
 
